@@ -1,0 +1,16 @@
+# Build directories
+NativeDLL/build/
+NativeDLL/buildMSVC/
+MonitorSwitchUI/bin/
+MonitorSwitchUI/obj/
+
+# IDE files
+.vs/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

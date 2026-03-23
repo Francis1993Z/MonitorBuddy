@@ -1,0 +1,110 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="320"
+        x:Class="MonitorSwitch.MainWindow"
+        Title="Monitor Switch"
+        Width="500" Height="480"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        Background="Transparent">
+
+    <Border CornerRadius="16"
+            Background="#1E1E2E"
+            BorderBrush="#313244"
+            BorderThickness="1"
+            Padding="24"
+            ClipToBounds="True">
+
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+            <!-- Titre -->
+            <TextBlock Grid.Row="0"
+                       Text="Monitor Switch"
+                       FontSize="22" FontWeight="Bold"
+                       Foreground="#CDD6F4"
+                       HorizontalAlignment="Center"
+                       Margin="0,4,0,20"/>
+
+            <!-- Panneau diagnostic : écrans détectés -->
+            <Border Grid.Row="1"
+                    Background="#181825"
+                    CornerRadius="8"
+                    Padding="10"
+                    Margin="0,0,0,16">
+                <TextBlock x:Name="DiagText"
+                           Text="Détection en cours..."
+                           FontSize="11"
+                           FontFamily="Consolas, monospace"
+                           Foreground="#A6ADC8"
+                           TextWrapping="Wrap"/>
+            </Border>
+
+            <!-- Boutons -->
+            <StackPanel Grid.Row="2"
+                        Spacing="16"
+                        VerticalAlignment="Center">
+
+                <!-- Bouton Mode TV -->
+                <Button x:Name="BtnModeTV"
+                        Click="OnClickModeTV"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        Height="72"
+                        CornerRadius="12"
+                        Background="#45475A"
+                        Foreground="#CDD6F4"
+                        FontSize="18" FontWeight="SemiBold"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="📺" FontSize="26" VerticalAlignment="Center"/>
+                        <TextBlock Text="Mode TV" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Bouton Mode Bureau -->
+                <Button x:Name="BtnModeBureau"
+                        Click="OnClickModeBureau"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        Height="72"
+                        CornerRadius="12"
+                        Background="#45475A"
+                        Foreground="#CDD6F4"
+                        FontSize="18" FontWeight="SemiBold"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="🖥️" FontSize="26" VerticalAlignment="Center"/>
+                        <TextBlock Text="Mode Bureau" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+            </StackPanel>
+
+            <!-- Barre de statut + Quitter -->
+            <Grid Grid.Row="3" Margin="0,16,0,0">
+                <TextBlock x:Name="StatusText"
+                           Text="Prêt"
+                           FontSize="12"
+                           Foreground="#6C7086"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+
+                <Button Click="OnClickQuitter"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Background="#F38BA8"
+                        Foreground="#1E1E2E"
+                        CornerRadius="8"
+                        Padding="14,6"
+                        FontSize="12" FontWeight="SemiBold"
+                        Cursor="Hand"
+                        Content="✕  Quitter"/>
+            </Grid>
+
+        </Grid>
+    </Border>
+</Window>
