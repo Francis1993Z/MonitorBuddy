@@ -7,8 +7,8 @@ add_library(GestionEcrans SHARED GestionEcrans.cpp)
 # ── Définir la macro d'export ──
 target_compile_definitions(GestionEcrans PRIVATE GESTIONECRANS_EXPORTS)
 
-# ── Lier user32.lib (ChangeDisplaySettingsEx, EnumDisplaySettings) ──
-target_link_libraries(GestionEcrans PRIVATE user32)
+# ── Lier user32.lib + setupapi.lib ──
+target_link_libraries(GestionEcrans PRIVATE user32 setupapi)
 
 # ── Propriétés de sortie ──
 set_target_properties(GestionEcrans PROPERTIES
