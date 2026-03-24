@@ -557,7 +557,7 @@ GESTIONECRANS_API bool ActiverModeTV()
     // Étape 1 — Détacher tous les écrans BUREAU
     for (int i = 0; i < nb; i++)
     {
-        if (ecrans[i].role == Role::BUREAU)
+        if (ecrans[i].role == Role::BUREAU && ecrans[i].actif)
         {
             if (!DetacherEcran(ecrans[i].deviceName))
                 ok = false;
@@ -619,7 +619,7 @@ GESTIONECRANS_API bool ActiverModeBureau()
     // Étape 1 — Détacher tous les écrans TV
     for (int i = 0; i < nb; i++)
     {
-        if (ecrans[i].role == Role::TV)
+        if (ecrans[i].role == Role::TV && ecrans[i].actif)
         {
             if (!DetacherEcran(ecrans[i].deviceName))
                 ok = false;
