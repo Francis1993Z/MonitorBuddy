@@ -5,7 +5,7 @@
         mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="320"
         x:Class="MonitorSwitch.MainWindow"
         Title="Monitor Switch"
-        Width="500" Height="480"
+        Width="620" Height="700"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
         ExtendClientAreaToDecorationsHint="True"
@@ -29,18 +29,21 @@
                        HorizontalAlignment="Center"
                        Margin="0,4,0,20"/>
 
-            <!-- Panneau diagnostic : écrans détectés -->
+            <!-- Panneau diagnostic : écrans détectés (scrollable) -->
             <Border Grid.Row="1"
                     Background="#181825"
                     CornerRadius="8"
                     Padding="10"
-                    Margin="0,0,0,16">
-                <TextBlock x:Name="DiagText"
-                           Text="Détection en cours..."
-                           FontSize="11"
-                           FontFamily="Consolas, monospace"
-                           Foreground="#A6ADC8"
-                           TextWrapping="Wrap"/>
+                    Margin="0,0,0,16"
+                    MaxHeight="350">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="DiagText"
+                               Text="Détection en cours..."
+                               FontSize="10.5"
+                               FontFamily="Consolas, monospace"
+                               Foreground="#A6ADC8"
+                               TextWrapping="NoWrap"/>
+                </ScrollViewer>
             </Border>
 
             <!-- Boutons -->
@@ -53,14 +56,14 @@
                         Click="OnClickModeTV"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Center"
-                        Height="72"
+                        Height="56"
                         CornerRadius="12"
                         Background="#45475A"
                         Foreground="#CDD6F4"
-                        FontSize="18" FontWeight="SemiBold"
+                        FontSize="16" FontWeight="SemiBold"
                         Cursor="Hand">
                     <StackPanel Orientation="Horizontal" Spacing="12">
-                        <TextBlock Text="📺" FontSize="26" VerticalAlignment="Center"/>
+                        <TextBlock Text="📺" FontSize="22" VerticalAlignment="Center"/>
                         <TextBlock Text="Mode TV" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
@@ -70,14 +73,14 @@
                         Click="OnClickModeBureau"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Center"
-                        Height="72"
+                        Height="56"
                         CornerRadius="12"
                         Background="#45475A"
                         Foreground="#CDD6F4"
-                        FontSize="18" FontWeight="SemiBold"
+                        FontSize="16" FontWeight="SemiBold"
                         Cursor="Hand">
                     <StackPanel Orientation="Horizontal" Spacing="12">
-                        <TextBlock Text="🖥️" FontSize="26" VerticalAlignment="Center"/>
+                        <TextBlock Text="🖥️" FontSize="22" VerticalAlignment="Center"/>
                         <TextBlock Text="Mode Bureau" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>

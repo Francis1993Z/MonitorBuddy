@@ -4,8 +4,13 @@
  * GestionEcrans.h
  * ---------------
  * Header pour la DLL native de gestion multi-écrans.
- * Auto-détecte les écrans via EnumDisplayDevices (EDID / nom constructeur)
- * et assigne automatiquement les rôles TV / Bureau.
+ *
+ * API MODERNE CCD (Connecting and Configuring Displays) :
+ *   Utilise QueryDisplayConfig / SetDisplayConfig au lieu de l'ancienne
+ *   API ChangeDisplaySettingsExW. Élimine les conflits de coordonnées
+ *   et les problèmes de topologie.
+ *
+ * Cible : Windows 10 et supérieur.
  *
  * Utilisation C# :
  *   [DllImport("GestionEcrans.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -28,24 +33,23 @@
 /*
  * ActiverModeTV
  * -------------
- * Auto-détecte les écrans, désactive les moniteurs de bureau (LG),
- * active la TV comme écran principal (0,0).
+ * Lit la topologie CCD, active le chemin vers la TV (HEC/HISENSE),
+ * désactive les chemins vers les LG (GSM). Applique via SetDisplayConfig.
  */
 GESTIONECRANS_API bool ActiverModeTV();
 
 /*
  * ActiverModeBureau
  * -----------------
- * Auto-détecte les écrans, désactive la TV,
- * active le premier LG comme principal (0,0),
- * active le second LG à droite (résolution détectée automatiquement).
+ * Lit la topologie CCD, active les chemins vers les LG (GSM),
+ * désactive le chemin vers la TV (HEC/HISENSE). Applique via SetDisplayConfig.
  */
 GESTIONECRANS_API bool ActiverModeBureau();
 
 /*
  * ObtenirInfoEcrans
  * -----------------
- * Fonction de diagnostic : remplit un buffer avec la liste des écrans
- * détectés et leurs rôles assignés. Utile pour l'affichage côté C#.
+ * Diagnostic CCD : remplit un buffer avec la liste de tous les chemins
+ * d'affichage, leur nom cible, état ACTIVE, et rôle assigné.
  */
 GESTIONECRANS_API void ObtenirInfoEcrans(wchar_t* buffer, int tailleMax);

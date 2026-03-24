@@ -38,8 +38,8 @@ public partial class MainWindow : Window
     {
         try
         {
-            var sb = new StringBuilder(4096);
-            ObtenirInfoEcrans(sb, 4096);
+            var sb = new StringBuilder(16384);
+            ObtenirInfoEcrans(sb, 16384);
             DiagText.Text = sb.Length > 0
                 ? sb.ToString().TrimEnd()
                 : "Aucun écran détecté.";
