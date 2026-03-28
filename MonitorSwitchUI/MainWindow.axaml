@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:MonitorSwitch"
         x:Class="MonitorSwitch.MainWindow"
         Title="MonitorBuddy"
-        Width="620" Height="700"
+        Width="620" Height="850"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
         ExtendClientAreaToDecorationsHint="True"
@@ -20,7 +20,7 @@
             Padding="24"
             ClipToBounds="True">
 
-        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
 
             <!-- Titre -->
             <TextBlock Grid.Row="0"
@@ -47,8 +47,59 @@
                 </ScrollViewer>
             </Border>
 
-            <!-- Panneau configuration layout Bureau -->
+            <!-- Panneau assignation des rôles -->
             <Border Grid.Row="2"
+                    Background="#181825"
+                    CornerRadius="8"
+                    Padding="10"
+                    Margin="0,0,0,16"
+                    MaxHeight="220">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Assignation des rôles"
+                               FontSize="12" FontWeight="SemiBold"
+                               Foreground="#CDD6F4"/>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="170">
+                        <ItemsControl x:Name="RoleList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="local:RoleItem">
+                                    <Border Background="#313244" CornerRadius="6" Padding="8,5" Margin="0,2">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding StatusIcon}"
+                                                       FontSize="11" FontWeight="Bold"
+                                                       Foreground="{Binding StatusColor}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0"
+                                                       Width="28"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding FriendlyName}"
+                                                       FontSize="11.5"
+                                                       Foreground="#CDD6F4"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <ComboBox Grid.Column="2"
+                                                      SelectedIndex="{Binding RoleIndex}"
+                                                      FontSize="11"
+                                                      MinWidth="100"
+                                                      Background="#45475A"
+                                                      Foreground="#CDD6F4"
+                                                      VerticalAlignment="Center">
+                                                <ComboBoxItem Content="Ignoré"/>
+                                                <ComboBoxItem Content="Bureau"/>
+                                                <ComboBoxItem Content="TV"/>
+                                            </ComboBox>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+
+            <!-- Panneau configuration layout Bureau -->
+            <Border Grid.Row="3"
                     Background="#181825"
                     CornerRadius="8"
                     Padding="10"
@@ -61,7 +112,7 @@
                     <!-- Liste des écrans avec boutons -->
                     <ItemsControl x:Name="LayoutList">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="local:LayoutItem">
+                            <DataTemplate x:DataType="local:LayoutItem" x:CompileBindings="False">
                                 <Border Background="#313244" CornerRadius="6" Padding="8,6" Margin="0,2">
                                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                         <TextBlock Grid.Column="0"
@@ -112,7 +163,7 @@
             </Border>
 
             <!-- Boutons -->
-            <StackPanel Grid.Row="3"
+            <StackPanel Grid.Row="4"
                         Spacing="16"
                         VerticalAlignment="Center">
 
@@ -153,7 +204,7 @@
             </StackPanel>
 
             <!-- Barre de statut + Quitter -->
-            <Grid Grid.Row="4" Margin="0,16,0,0">
+            <Grid Grid.Row="5" Margin="0,16,0,0">
                 <TextBlock x:Name="StatusText"
                            Text="Prêt"
                            FontSize="12"

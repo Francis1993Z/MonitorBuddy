@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,11 +17,11 @@ public partial class App : Application
     private MainWindow? _mainWindow;
     private TrayIcon? _trayIcon;
 
-    [DllImport("GestionEcrans.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern bool ActiverModeTV();
+    [DllImport("GestionEcrans.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private static extern void EnumererEcrans(StringBuilder buffer, int tailleMax);
 
-    [DllImport("GestionEcrans.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern bool ActiverModeBureau();
+    [DllImport("GestionEcrans.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private static extern bool ActiverEcrans(string targetList);
 
     public override void Initialize()
     {
@@ -56,13 +57,13 @@ public partial class App : Application
         var itemTV = new NativeMenuItem("Mode TV");
         itemTV.Click += (_, _) =>
         {
-            try { ActiverModeTV(); } catch { }
+            try { ActiverMode(MonitorRole.Tv); } catch { }
         };
 
         var itemBureau = new NativeMenuItem("Mode Bureau");
         itemBureau.Click += (_, _) =>
         {
-            try { ActiverModeBureau(); } catch { }
+            try { ActiverMode(MonitorRole.Bureau); } catch { }
         };
 
         var itemSep = new NativeMenuItemSeparator();
@@ -94,6 +95,17 @@ public partial class App : Application
             _mainWindow.WindowState = WindowState.Normal;
             _mainWindow.Activate();
         }
+    }
+
+    private void ActiverMode(MonitorRole role)
+    {
+        var config = MonitorConfig.Load();
+        var sb = new StringBuilder(32768);
+        EnumererEcrans(sb, 32768);
+        var detected = MonitorConfig.ParseEnumResult(sb.ToString());
+        var targetList = MonitorConfig.BuildTargetList(config, detected, role);
+        if (!string.IsNullOrEmpty(targetList))
+            ActiverEcrans(targetList);
     }
 
     public void QuitApp()
