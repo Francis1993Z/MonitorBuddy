@@ -231,6 +231,11 @@ public partial class MainWindow : Window
         ChargerLayout();
     }
 
+    private void OnClickMinimiser(object? sender, RoutedEventArgs e)
+    {
+        Hide();
+    }
+
     private void OnClickQuitter(object? sender, RoutedEventArgs e)
     {
         if (Application.Current is App app)
