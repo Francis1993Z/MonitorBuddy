@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -230,7 +233,16 @@ public partial class MainWindow : Window
 
     private void OnClickQuitter(object? sender, RoutedEventArgs e)
     {
-        Close();
+        if (Application.Current is App app)
+            app.QuitApp();
+    }
+
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        // Fermer la fenêtre → masquer dans le systray (pas quitter)
+        e.Cancel = true;
+        Hide();
+        base.OnClosing(e);
     }
 }
 
