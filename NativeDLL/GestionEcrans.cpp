@@ -267,6 +267,8 @@ static bool BasculerMode(bool modeTv)
         bool   wasActive;
         LUID   adapterId;
         UINT32 targetId;
+        LUID   sourceAdapterId;
+        UINT32 sourceId;
     };
 
     std::vector<PathInfo> infos;
@@ -299,7 +301,9 @@ static bool BasculerMode(bool modeTv)
 
         infos.push_back({i, role, wasActive,
                           path.targetInfo.adapterId,
-                          path.targetInfo.id});
+                          path.targetInfo.id,
+                          path.sourceInfo.adapterId,
+                          path.sourceInfo.id});
     }
 
     // -- Etape 2a : Desactiver tous les chemins TV/BUREAU --
@@ -311,39 +315,90 @@ static bool BasculerMode(bool modeTv)
     }
 
     // -- Etape 2b : Activer les chemins voulus --
-    std::vector<TargetId> activated;
+    //
+    // BUREAU ETENDU (pas clone) :
+    //   Deux chemins CCD qui partagent la MEME source GPU → clone (duplique).
+    //   Deux chemins CCD avec des sources DIFFERENTES → extend (etendu).
+    //   On doit donc s'assurer que chaque cible BUREAU utilise une source unique.
+    //
+    // Strategie :
+    //   - Tracker les sources deja utilisees (usedSources)
+    //   - Pour chaque cible, preferer un chemin dont la source est libre
+    //   - En mode TV (1 seul ecran), pas de contrainte de source
 
-    // Pass A : chemins qui etaient deja actifs (preferes car modes valides)
+    std::vector<TargetId> activated;
+    std::vector<TargetId> usedSources;  // sources GPU deja assignees
+
+    // Fonction lambda : verifier si une source est deja utilisee
+    auto sourceDejaUtilisee = [&](LUID sAdapterId, UINT32 sId) -> bool {
+        for (const auto& s : usedSources)
+            if (LuidEqual(s.adapterId, sAdapterId) && s.id == sId)
+                return true;
+        return false;
+    };
+
+    // Collecter les cibles uniques a activer
+    struct CibleVoulue {
+        LUID   adapterId;
+        UINT32 targetId;
+    };
+    std::vector<CibleVoulue> ciblesVoulues;
+
     for (auto& info : infos)
     {
-        if (!info.wasActive) continue;
-
         bool shouldActivate = (modeTv  && info.role == Role::TV) ||
                               (!modeTv && info.role == Role::BUREAU);
 
         if (shouldActivate &&
             !TargetDejaVu(activated, info.adapterId, info.targetId))
         {
-            paths[info.index].flags |= DISPLAYCONFIG_PATH_ACTIVE;
+            ciblesVoulues.push_back({info.adapterId, info.targetId});
             activated.push_back({info.adapterId, info.targetId});
-            Log(L"  -> Activer (deja actif): Path[%zu]\n", info.index);
         }
     }
 
-    // Pass B : chemins inactifs (cibles pas encore couvertes)
-    for (auto& info : infos)
+    // Pour chaque cible voulue, trouver le meilleur chemin
+    // Priorite : (1) deja actif + source libre, (2) inactif + source libre,
+    //            (3) deja actif (meme si source prise), (4) inactif
+    activated.clear();
+
+    for (auto& cible : ciblesVoulues)
     {
-        if (info.wasActive) continue;
+        size_t bestIdx = (size_t)-1;
+        int    bestScore = -1;
 
-        bool shouldActivate = (modeTv  && info.role == Role::TV) ||
-                              (!modeTv && info.role == Role::BUREAU);
-
-        if (shouldActivate &&
-            !TargetDejaVu(activated, info.adapterId, info.targetId))
+        for (auto& info : infos)
         {
-            paths[info.index].flags |= DISPLAYCONFIG_PATH_ACTIVE;
-            activated.push_back({info.adapterId, info.targetId});
-            Log(L"  -> Activer (etait inactif): Path[%zu]\n", info.index);
+            if (!LuidEqual(info.adapterId, cible.adapterId) ||
+                info.targetId != cible.targetId)
+                continue;
+
+            bool srcLibre = !sourceDejaUtilisee(info.sourceAdapterId, info.sourceId);
+            int score = 0;
+            if (info.wasActive && srcLibre)  score = 4;  // ideal
+            else if (!info.wasActive && srcLibre) score = 3;
+            else if (info.wasActive)         score = 2;  // clone fallback
+            else                             score = 1;
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestIdx = info.index;
+            }
+        }
+
+        if (bestIdx != (size_t)-1)
+        {
+            paths[bestIdx].flags |= DISPLAYCONFIG_PATH_ACTIVE;
+            activated.push_back({cible.adapterId, cible.targetId});
+
+            // Enregistrer la source utilisee
+            auto& chosenPath = paths[bestIdx];
+            usedSources.push_back({chosenPath.sourceInfo.adapterId,
+                                    chosenPath.sourceInfo.id});
+
+            Log(L"  -> Activer Path[%zu] (source=%u, score=%d)\n",
+                bestIdx, chosenPath.sourceInfo.id, bestScore);
         }
     }
 
