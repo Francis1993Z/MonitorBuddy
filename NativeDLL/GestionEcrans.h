@@ -53,3 +53,27 @@ GESTIONECRANS_API bool ActiverModeBureau();
  * d'affichage, leur nom cible, état ACTIVE, et rôle assigné.
  */
 GESTIONECRANS_API void ObtenirInfoEcrans(wchar_t* buffer, int tailleMax);
+
+/*
+ * ObtenirEcransBureau
+ * -------------------
+ * Retourne les noms conviviaux des écrans BUREAU détectés, séparés par '|'.
+ * Ex: "23EA53|LG FULL HD"
+ */
+GESTIONECRANS_API void ObtenirEcransBureau(wchar_t* buffer, int tailleMax);
+
+/*
+ * ObtenirLayoutConfig
+ * -------------------
+ * Retourne la config layout actuelle : "nom1|nom2|...\nprimary_index"
+ * Chaîne vide si pas de layout.json.
+ */
+GESTIONECRANS_API void ObtenirLayoutConfig(wchar_t* buffer, int tailleMax);
+
+/*
+ * DefinirOrdreBureau
+ * ------------------
+ * Sauvegarde l'ordre des écrans bureau dans layout.json.
+ * Format attendu : "nom1|nom2|...\nprimary_index"
+ */
+GESTIONECRANS_API void DefinirOrdreBureau(const wchar_t* config);

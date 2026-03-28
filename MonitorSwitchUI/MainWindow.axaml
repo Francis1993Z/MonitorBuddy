@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="320"
+        xmlns:local="clr-namespace:MonitorSwitch"
         x:Class="MonitorSwitch.MainWindow"
         Title="Monitor Switch"
         Width="620" Height="700"
@@ -19,7 +20,7 @@
             Padding="24"
             ClipToBounds="True">
 
-        <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
 
             <!-- Titre -->
             <TextBlock Grid.Row="0"
@@ -46,8 +47,72 @@
                 </ScrollViewer>
             </Border>
 
+            <!-- Panneau configuration layout Bureau -->
+            <Border Grid.Row="2"
+                    Background="#181825"
+                    CornerRadius="8"
+                    Padding="10"
+                    Margin="0,0,0,16">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Configuration Bureau (gauche → droite)"
+                               FontSize="12" FontWeight="SemiBold"
+                               Foreground="#CDD6F4"/>
+
+                    <!-- Liste des écrans avec boutons -->
+                    <ItemsControl x:Name="LayoutList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:LayoutItem">
+                                <Border Background="#313244" CornerRadius="6" Padding="8,6" Margin="0,2">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Position}"
+                                                   FontSize="12" FontWeight="Bold"
+                                                   Foreground="#89B4FA"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Name}"
+                                                   FontSize="12"
+                                                   Foreground="#CDD6F4"
+                                                   VerticalAlignment="Center"/>
+                                        <Button Grid.Column="2"
+                                                Tag="{Binding Name}"
+                                                Click="OnClickSetPrimary"
+                                                Background="Transparent"
+                                                Foreground="{Binding PrimaryColor}"
+                                                FontSize="16"
+                                                Padding="4,2"
+                                                Cursor="Hand"
+                                                ToolTip.Tip="Définir comme principal"
+                                                Content="★"/>
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2">
+                                            <Button Tag="{Binding Name}"
+                                                    Click="OnClickMoveLeft"
+                                                    Background="Transparent"
+                                                    Foreground="#A6ADC8"
+                                                    FontSize="14"
+                                                    Padding="4,2"
+                                                    Cursor="Hand"
+                                                    Content="◀"/>
+                                            <Button Tag="{Binding Name}"
+                                                    Click="OnClickMoveRight"
+                                                    Background="Transparent"
+                                                    Foreground="#A6ADC8"
+                                                    FontSize="14"
+                                                    Padding="4,2"
+                                                    Cursor="Hand"
+                                                    Content="▶"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <!-- Boutons -->
-            <StackPanel Grid.Row="2"
+            <StackPanel Grid.Row="3"
                         Spacing="16"
                         VerticalAlignment="Center">
 
@@ -88,7 +153,7 @@
             </StackPanel>
 
             <!-- Barre de statut + Quitter -->
-            <Grid Grid.Row="3" Margin="0,16,0,0">
+            <Grid Grid.Row="4" Margin="0,16,0,0">
                 <TextBlock x:Name="StatusText"
                            Text="Prêt"
                            FontSize="12"

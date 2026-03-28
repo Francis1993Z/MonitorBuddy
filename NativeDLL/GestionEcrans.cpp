@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <vector>
+#include <algorithm>
 #include "GestionEcrans.h"
 
 /* ============================================================================
@@ -77,6 +78,137 @@ static void Log(const wchar_t* fmt, ...)
     vfwprintf(g_logFile, fmt, args);
     va_end(args);
     fflush(g_logFile);
+}
+
+/* ============================================================================
+ * HELPERS — Chemin du dossier DLL
+ * ============================================================================ */
+
+static void ObtenirDossierDLL(wchar_t* dossier, int taille)
+{
+    dossier[0] = L'\0';
+    HMODULE hSelf = NULL;
+    GetModuleHandleExW(
+        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+        (LPCWSTR)&ObtenirDossierDLL, &hSelf);
+    GetModuleFileNameW(hSelf, dossier, taille);
+    wchar_t* lastSlash = wcsrchr(dossier, L'\\');
+    if (lastSlash) *(lastSlash + 1) = L'\0';
+}
+
+/* ============================================================================
+ * LAYOUT CONFIG — layout.json (ordre gauche->droite + ecran principal)
+ * ============================================================================
+ *
+ * Format du fichier layout.json (a cote de la DLL) :
+ * {
+ *   "bureau_order": ["23EA53", "LG FULL HD"],
+ *   "primary_index": 0
+ * }
+ */
+
+static const int MAX_BUREAU_ECRANS = 8;
+
+struct LayoutConfig
+{
+    wchar_t noms[MAX_BUREAU_ECRANS][64];  // noms conviviaux, dans l'ordre gauche->droite
+    int     count;                         // nombre d'ecrans dans l'ordre
+    int     primaryIndex;                  // index de l'ecran principal (0-based)
+    bool    valide;                        // true si le fichier a ete lu avec succes
+};
+
+static LayoutConfig LireLayoutConfig()
+{
+    LayoutConfig cfg = {};
+    cfg.valide = false;
+    cfg.primaryIndex = 0;
+
+    wchar_t dossier[MAX_PATH];
+    ObtenirDossierDLL(dossier, MAX_PATH);
+    wchar_t chemin[MAX_PATH];
+    _snwprintf_s(chemin, MAX_PATH, _TRUNCATE, L"%slayout.json", dossier);
+
+    FILE* f = NULL;
+    _wfopen_s(&f, chemin, L"r, ccs=UTF-8");
+    if (!f) return cfg;
+
+    // Lire tout le fichier (max 4K)
+    wchar_t buf[4096] = {};
+    size_t total = 0;
+    while (total < 4095)
+    {
+        wchar_t c;
+        if (fread(&c, sizeof(wchar_t), 1, f) != 1) break;
+        buf[total++] = c;
+    }
+    fclose(f);
+    buf[total] = L'\0';
+
+    // Parser "bureau_order": [...]
+    const wchar_t* arr = wcsstr(buf, L"\"bureau_order\"");
+    if (!arr) return cfg;
+    arr = wcschr(arr, L'[');
+    if (!arr) return cfg;
+    arr++; // skip '['
+
+    const wchar_t* arrEnd = wcschr(arr, L']');
+    if (!arrEnd) return cfg;
+
+    // Extraire chaque "nom" entre guillemets
+    const wchar_t* p = arr;
+    while (p < arrEnd && cfg.count < MAX_BUREAU_ECRANS)
+    {
+        const wchar_t* q1 = wcschr(p, L'"');
+        if (!q1 || q1 >= arrEnd) break;
+        q1++;
+        const wchar_t* q2 = wcschr(q1, L'"');
+        if (!q2 || q2 >= arrEnd) break;
+
+        int len = (int)(q2 - q1);
+        if (len > 63) len = 63;
+        wcsncpy_s(cfg.noms[cfg.count], 64, q1, len);
+        cfg.count++;
+        p = q2 + 1;
+    }
+
+    // Parser "primary_index": N
+    const wchar_t* pi = wcsstr(buf, L"\"primary_index\"");
+    if (pi)
+    {
+        pi = wcschr(pi, L':');
+        if (pi)
+        {
+            pi++;
+            while (*pi == L' ' || *pi == L'\t') pi++;
+            cfg.primaryIndex = _wtoi(pi);
+            if (cfg.primaryIndex < 0 || cfg.primaryIndex >= cfg.count)
+                cfg.primaryIndex = 0;
+        }
+    }
+
+    cfg.valide = (cfg.count > 0);
+    return cfg;
+}
+
+static void EcrireLayoutConfig(const LayoutConfig& cfg)
+{
+    wchar_t dossier[MAX_PATH];
+    ObtenirDossierDLL(dossier, MAX_PATH);
+    wchar_t chemin[MAX_PATH];
+    _snwprintf_s(chemin, MAX_PATH, _TRUNCATE, L"%slayout.json", dossier);
+
+    FILE* f = NULL;
+    _wfopen_s(&f, chemin, L"w, ccs=UTF-8");
+    if (!f) return;
+
+    fwprintf(f, L"{\n  \"bureau_order\": [");
+    for (int i = 0; i < cfg.count; i++)
+    {
+        if (i > 0) fwprintf(f, L", ");
+        fwprintf(f, L"\"%s\"", cfg.noms[i]);
+    }
+    fwprintf(f, L"],\n  \"primary_index\": %d\n}\n", cfg.primaryIndex);
+    fclose(f);
 }
 
 /* ============================================================================
@@ -262,13 +394,14 @@ static bool BasculerMode(bool modeTv)
     // -- Etape 2 : Classifier chaque chemin --
     struct PathInfo
     {
-        size_t index;
-        Role   role;
-        bool   wasActive;
-        LUID   adapterId;
-        UINT32 targetId;
-        LUID   sourceAdapterId;
-        UINT32 sourceId;
+        size_t  index;
+        Role    role;
+        bool    wasActive;
+        LUID    adapterId;
+        UINT32  targetId;
+        LUID    sourceAdapterId;
+        UINT32  sourceId;
+        wchar_t friendlyName[64];
     };
 
     std::vector<PathInfo> infos;
@@ -299,11 +432,16 @@ static bool BasculerMode(bool modeTv)
             role == Role::BUREAU ? L"BUREAU" : L"INCONNU"
         );
 
-        infos.push_back({i, role, wasActive,
-                          path.targetInfo.adapterId,
-                          path.targetInfo.id,
-                          path.sourceInfo.adapterId,
-                          path.sourceInfo.id});
+        PathInfo pi = {};
+        pi.index = i;
+        pi.role = role;
+        pi.wasActive = wasActive;
+        pi.adapterId = path.targetInfo.adapterId;
+        pi.targetId = path.targetInfo.id;
+        pi.sourceAdapterId = path.sourceInfo.adapterId;
+        pi.sourceId = path.sourceInfo.id;
+        wcsncpy_s(pi.friendlyName, 64, targetName.monitorFriendlyDeviceName, 63);
+        infos.push_back(pi);
     }
 
     // -- Etape 2a : Desactiver tous les chemins TV/BUREAU --
@@ -339,8 +477,9 @@ static bool BasculerMode(bool modeTv)
 
     // Collecter les cibles uniques a activer
     struct CibleVoulue {
-        LUID   adapterId;
-        UINT32 targetId;
+        LUID    adapterId;
+        UINT32  targetId;
+        wchar_t friendlyName[64];
     };
     std::vector<CibleVoulue> ciblesVoulues;
 
@@ -352,8 +491,72 @@ static bool BasculerMode(bool modeTv)
         if (shouldActivate &&
             !TargetDejaVu(activated, info.adapterId, info.targetId))
         {
-            ciblesVoulues.push_back({info.adapterId, info.targetId});
+            CibleVoulue cv = {};
+            cv.adapterId = info.adapterId;
+            cv.targetId = info.targetId;
+            wcsncpy_s(cv.friendlyName, 64, info.friendlyName, 63);
+            ciblesVoulues.push_back(cv);
             activated.push_back({info.adapterId, info.targetId});
+        }
+    }
+
+    // -- Etape 2c : Reordonner selon layout.json (mode Bureau) --
+    // L'ordre dans ciblesVoulues determine la position gauche->droite.
+    // Le primaryIndex determine quel ecran est a (0,0) = barre des taches.
+    LayoutConfig layoutCfg = {};
+    int layoutPrimaryIdx = 0;
+
+    if (!modeTv && ciblesVoulues.size() > 1)
+    {
+        layoutCfg = LireLayoutConfig();
+
+        if (layoutCfg.valide)
+        {
+            Log(L"  Layout config: %d ecrans, primary=%d\n",
+                layoutCfg.count, layoutCfg.primaryIndex);
+
+            // Reordonner ciblesVoulues selon l'ordre du layout
+            std::vector<CibleVoulue> ordonnees;
+
+            // D'abord, ajouter les cibles dans l'ordre du layout
+            for (int li = 0; li < layoutCfg.count; li++)
+            {
+                for (auto& cv : ciblesVoulues)
+                {
+                    if (_wcsicmp(cv.friendlyName, layoutCfg.noms[li]) == 0)
+                    {
+                        ordonnees.push_back(cv);
+                        break;
+                    }
+                }
+            }
+
+            // Ajouter les cibles non trouvees dans le layout (nouveaux ecrans)
+            for (auto& cv : ciblesVoulues)
+            {
+                bool found = false;
+                for (auto& o : ordonnees)
+                    if (LuidEqual(o.adapterId, cv.adapterId) && o.targetId == cv.targetId)
+                    { found = true; break; }
+                if (!found) ordonnees.push_back(cv);
+            }
+
+            if (!ordonnees.empty())
+            {
+                ciblesVoulues = ordonnees;
+                layoutPrimaryIdx = layoutCfg.primaryIndex;
+                if (layoutPrimaryIdx < 0 || layoutPrimaryIdx >= (int)ciblesVoulues.size())
+                    layoutPrimaryIdx = 0;
+            }
+
+            for (size_t ci = 0; ci < ciblesVoulues.size(); ci++)
+                Log(L"  Ordre layout[%zu]: \"%s\"%s\n",
+                    ci, ciblesVoulues[ci].friendlyName,
+                    (int)ci == layoutPrimaryIdx ? L" (PRINCIPAL)" : L"");
+        }
+        else
+        {
+            Log(L"  Pas de layout.json -> ordre par defaut\n");
         }
     }
 
@@ -431,6 +634,122 @@ GESTIONECRANS_API bool ActiverModeTV()
 GESTIONECRANS_API bool ActiverModeBureau()
 {
     return BasculerMode(false);
+}
+
+/*
+ * ObtenirEcransBureau
+ * Retourne les noms conviviaux des ecrans BUREAU detectes, separes par '|'.
+ * Ex: "23EA53|LG FULL HD"
+ * L'UI utilise cette liste pour peupler le panneau de configuration layout.
+ */
+GESTIONECRANS_API void ObtenirEcransBureau(wchar_t* buffer, int tailleMax)
+{
+    if (!buffer || tailleMax <= 0) return;
+    buffer[0] = L'\0';
+
+    std::vector<DISPLAYCONFIG_PATH_INFO> paths;
+    std::vector<DISPLAYCONFIG_MODE_INFO> modes;
+    if (!LireTopologie(paths, modes)) return;
+
+    std::vector<TargetId> seen;
+    int pos = 0;
+
+    for (size_t i = 0; i < paths.size(); i++)
+    {
+        auto& path = paths[i];
+        if (!path.targetInfo.targetAvailable) continue;
+        if (TargetDejaVu(seen, path.targetInfo.adapterId, path.targetInfo.id))
+            continue;
+        seen.push_back({path.targetInfo.adapterId, path.targetInfo.id});
+
+        DISPLAYCONFIG_TARGET_DEVICE_NAME tn;
+        if (!ObtenirNomCible(path, tn)) continue;
+
+        Role role = DeterminerRole(tn.monitorFriendlyDeviceName, tn.monitorDevicePath);
+        if (role != Role::BUREAU) continue;
+
+        int nameLen = (int)wcslen(tn.monitorFriendlyDeviceName);
+        int needed = (pos > 0) ? nameLen + 1 : nameLen; // +1 for separator
+        if (pos + needed >= tailleMax - 1) break;
+
+        if (pos > 0) { wcscat_s(buffer, tailleMax, L"|"); pos++; }
+        wcscat_s(buffer, tailleMax, tn.monitorFriendlyDeviceName);
+        pos += nameLen;
+    }
+}
+
+/*
+ * ObtenirLayoutConfig
+ * Retourne la config layout actuelle au format:
+ * "nom1|nom2|...\nprimary_index"
+ * Si pas de layout.json, retourne une chaine vide.
+ */
+GESTIONECRANS_API void ObtenirLayoutConfig(wchar_t* buffer, int tailleMax)
+{
+    if (!buffer || tailleMax <= 0) return;
+    buffer[0] = L'\0';
+
+    LayoutConfig cfg = LireLayoutConfig();
+    if (!cfg.valide) return;
+
+    int pos = 0;
+    for (int i = 0; i < cfg.count; i++)
+    {
+        int nameLen = (int)wcslen(cfg.noms[i]);
+        int needed = (pos > 0) ? nameLen + 1 : nameLen;
+        if (pos + needed >= tailleMax - 2) break;
+
+        if (pos > 0) { wcscat_s(buffer, tailleMax, L"|"); pos++; }
+        wcscat_s(buffer, tailleMax, cfg.noms[i]);
+        pos += nameLen;
+    }
+
+    // Ajouter newline + primary index
+    wchar_t piStr[16];
+    _snwprintf_s(piStr, 16, _TRUNCATE, L"\n%d", cfg.primaryIndex);
+    if (pos + (int)wcslen(piStr) < tailleMax - 1)
+        wcscat_s(buffer, tailleMax, piStr);
+}
+
+/*
+ * DefinirOrdreBureau
+ * Recoit la config layout au format: "nom1|nom2|...\nprimary_index"
+ * Sauvegarde dans layout.json.
+ */
+GESTIONECRANS_API void DefinirOrdreBureau(const wchar_t* config)
+{
+    if (!config || !config[0]) return;
+
+    LayoutConfig cfg = {};
+
+    // Copier pour pouvoir modifier
+    wchar_t buf[2048] = {};
+    wcsncpy_s(buf, 2048, config, 2047);
+
+    // Separer la ligne des noms et le primary_index
+    wchar_t* newline = wcschr(buf, L'\n');
+    if (newline)
+    {
+        *newline = L'\0';
+        cfg.primaryIndex = _wtoi(newline + 1);
+    }
+
+    // Parser les noms separes par '|'
+    wchar_t* ctx = NULL;
+    wchar_t* token = wcstok_s(buf, L"|", &ctx);
+    while (token && cfg.count < MAX_BUREAU_ECRANS)
+    {
+        wcsncpy_s(cfg.noms[cfg.count], 64, token, 63);
+        cfg.count++;
+        token = wcstok_s(NULL, L"|", &ctx);
+    }
+
+    if (cfg.primaryIndex < 0 || cfg.primaryIndex >= cfg.count)
+        cfg.primaryIndex = 0;
+
+    cfg.valide = (cfg.count > 0);
+    if (cfg.valide)
+        EcrireLayoutConfig(cfg);
 }
 
 /* ============================================================================
