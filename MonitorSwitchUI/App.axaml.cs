@@ -46,7 +46,7 @@ public partial class App : Application
     {
         _trayIcon = new TrayIcon
         {
-            ToolTipText = "Monitor Switch",
+            ToolTipText = "MonitorBuddy",
             Icon = CreateSimpleIcon(),
             IsVisible = true
         };

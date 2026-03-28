@@ -5,7 +5,7 @@
         mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="320"
         xmlns:local="clr-namespace:MonitorSwitch"
         x:Class="MonitorSwitch.MainWindow"
-        Title="Monitor Switch"
+        Title="MonitorBuddy"
         Width="620" Height="700"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
@@ -24,7 +24,7 @@
 
             <!-- Titre -->
             <TextBlock Grid.Row="0"
-                       Text="Monitor Switch"
+                       Text="MonitorBuddy"
                        FontSize="22" FontWeight="Bold"
                        Foreground="#CDD6F4"
                        HorizontalAlignment="Center"
