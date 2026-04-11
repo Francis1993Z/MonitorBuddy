@@ -16,6 +16,24 @@ Open-source Windows utility to seamlessly switch between TV and multi-monitor de
 - **NativeDLL/** — C++ engine (`GestionEcrans.dll`) using CCD API for topology read/modify/apply
 - **MonitorSwitchUI/** — Avalonia UI (C#) with dark theme, system tray, and layout config panel
 
+## Development Direction & Philosophy
+
+MonitorBuddy is built with a specific philosophy: the **Smart Light Switch** approach.
+
+While many display utilities aim to be comprehensive control centers with hundreds of features, MonitorBuddy is designed to be a high-reliability, zero-friction tool that does one thing perfectly: switching between predefined life scenarios in 2 clicks instead of 15.
+
+### Core Principles
+
+- **Zero-Thought Operation**: Once configured, the user should not have to think about resolutions, coordinates, or IDs. The app should feel like a physical toggle switch for your room.
+- **Agnostic Reliability**: By moving away from hardcoded keywords to a user-defined mapping, the app remains flexible for any setup (2, 3, or 4 monitors) while remaining indestructible thanks to Hardware ID (EDID) tracking.
+- **The "Simplicity" Line**: We intentionally avoid feature creep. MonitorBuddy will not become a window manager, a wallpaper swapper, or a color calibrator. Staying limited in scope is what keeps it fast and stable.
+
+### Roadmap
+
+- **Dynamic Flexibility**: Enhancing the UI to effortlessly handle any combination of 2 to 4 monitors while maintaining a minimalist default view.
+- **Total Background Integration**: Improving the system tray and adding global hotkeys so that the UI becomes optional for daily use.
+- **Localization**: Transitioning the UI from French to a fully localized experience (English/French).
+
 ## Configuration
 
 Edit keywords in `NativeDLL/GestionEcrans.cpp` to match your hardware:
